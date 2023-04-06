@@ -1,11 +1,11 @@
 use ray_tracing::camera::Camera;
-use ray_tracing::material::{Lambertian, Metal, Dielectric, Material};
-use ray_tracing::vec3::*;
-use ray_tracing::ray::*;
 use ray_tracing::color::*;
 use ray_tracing::hittable::*;
 use ray_tracing::hittable_list::*;
+use ray_tracing::material::{Dielectric, Lambertian, Material, Metal};
+use ray_tracing::ray::*;
 use ray_tracing::sphere::*;
+use ray_tracing::vec3::*;
 
 use rand::prelude::*;
 
@@ -15,7 +15,11 @@ fn random_scene() -> HittableList {
     let mut world = HittableList::new();
 
     let ground_material = Rc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
-    world.add(Rc::new(Sphere::new(Point3::new(0.0,-1000.0,0.0), 1000.0, ground_material)));
+    world.add(Rc::new(Sphere::new(
+        Point3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        ground_material,
+    )));
 
     let mut rng = thread_rng();
 
@@ -23,7 +27,11 @@ fn random_scene() -> HittableList {
         for b in -11..11 {
             let choose_mat = rng.gen::<f64>();
 
-            let center = Point3::new(a as f64 + 0.9*rng.gen::<f64>(), 0.2, b as f64 + 0.9*rng.gen::<f64>());
+            let center = Point3::new(
+                a as f64 + 0.9 * rng.gen::<f64>(),
+                0.2,
+                b as f64 + 0.9 * rng.gen::<f64>(),
+            );
 
             if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 let mut sphere_material: Rc<dyn Material> = Rc::new(Metal::default());
@@ -50,13 +58,25 @@ fn random_scene() -> HittableList {
     }
 
     let material1 = Rc::new(Dielectric::new(1.5));
-    world.add(Rc::new(Sphere::new(Point3::new(0.0, 1.0, 0.0), 1.0, material1)));
+    world.add(Rc::new(Sphere::new(
+        Point3::new(0.0, 1.0, 0.0),
+        1.0,
+        material1,
+    )));
 
     let material2 = Rc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
-    world.add(Rc::new(Sphere::new(Point3::new(-4.0, 1.0, 0.0), 1.0, material2)));
+    world.add(Rc::new(Sphere::new(
+        Point3::new(-4.0, 1.0, 0.0),
+        1.0,
+        material2,
+    )));
 
     let material3 = Rc::new(Metal::new(Color::new(0.7, 0.6, 0.5), 0.0));
-    world.add(Rc::new(Sphere::new(Point3::new(4.0, 1.0, 0.0), 1.0, material3)));
+    world.add(Rc::new(Sphere::new(
+        Point3::new(4.0, 1.0, 0.0),
+        1.0,
+        material3,
+    )));
 
     world
 }
@@ -72,12 +92,14 @@ fn ray_color(r: Ray, world: &dyn Hittable, depth: i32) -> Color {
         let mut attenuation = Color::default();
         let mut scattered = Ray::default();
 
-
-        if rec.material.scatter(&r, &rec, &mut attenuation, &mut scattered) {
-            return attenuation * ray_color(scattered, world, depth - 1)
+        if rec
+            .material
+            .scatter(&r, &rec, &mut attenuation, &mut scattered)
+        {
+            return attenuation * ray_color(scattered, world, depth - 1);
         }
 
-        return Color::default()
+        return Color::default();
     }
 
     let unit_direction = r.direction.unit_vector();
@@ -93,21 +115,29 @@ fn main() {
     let image_width = 1200;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
 
-    let samples_per_pixel = 500;
-    let max_depth = 50;
+    let samples_per_pixel = 32;
+    let max_depth = 8;
 
     // world
     let world = random_scene();
 
     // camera
-    
+
     let lookfrom = Point3::new(13.0, 2.0, 3.0);
     let lookat = Point3::new(0.0, 0.0, 0.0);
     let vup = Vec3::new(0.0, 1.0, 0.0);
     let dist_to_focus = 10.0;
     let aperture = 0.1;
 
-    let cam = Camera::new(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus);
+    let cam = Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        20.0,
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
 
     // Render
     print!("P3\n{} {}\n255\n", image_width, image_height);
@@ -127,7 +157,6 @@ fn main() {
 
                 pixel_color = pixel_color + ray_color(r, &world, max_depth);
             }
-
 
             write_color(&mut std::io::stdout(), pixel_color, samples_per_pixel);
         }
