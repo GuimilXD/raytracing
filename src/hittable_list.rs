@@ -1,6 +1,5 @@
 use crate::hittable::{HitRecord, Hittable};
 use crate::ray::Ray;
-use std::rc::Rc;
 use std::sync::Arc;
 
 #[derive(Default, Clone)]

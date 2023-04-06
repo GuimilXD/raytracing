@@ -1,5 +1,7 @@
+use image::Rgb;
+use image::RgbImage;
 use ray_tracing::camera::Camera;
-use ray_tracing::color::*;
+use ray_tracing::color::format_pixel_color;
 use ray_tracing::hittable::*;
 use ray_tracing::hittable_list::*;
 use ray_tracing::material::{Dielectric, Lambertian, Material, Metal};
@@ -8,7 +10,9 @@ use ray_tracing::sphere::*;
 use ray_tracing::vec3::*;
 
 use rand::prelude::*;
+use threadpool::ThreadPool;
 
+use std::sync::mpsc::channel;
 use std::sync::Arc;
 
 fn random_scene() -> HittableList {
@@ -82,7 +86,7 @@ fn random_scene() -> HittableList {
     world
 }
 
-fn ray_color(r: Ray, world: Arc<&(dyn Hittable + Send + Sync)>, depth: i32) -> Color {
+fn ray_color(r: Ray, world: &HittableList, depth: i32) -> Color {
     let mut rec = HitRecord::default();
 
     if depth <= 0 {
@@ -113,14 +117,11 @@ fn main() {
     // image
     let aspect_ratio = 3.0 / 2.0;
 
-    let image_width = 1200;
+    let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
 
-    let samples_per_pixel = 32;
-    let max_depth = 8;
-
-    // world
-    let world = Arc::new(random_scene());
+    let samples_per_pixel = 5;
+    let max_depth = 2;
 
     // camera
 
@@ -140,17 +141,20 @@ fn main() {
         dist_to_focus,
     );
 
+    // world
+    let world = random_scene();
+
     // Render
-    print!("P3\n{} {}\n255\n", image_width, image_height);
+    let n_workers = 4;
+    let pool = ThreadPool::new(n_workers);
 
-    let pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(8)
-        .build()
-        .unwrap();
+    let mut img = RgbImage::new(image_width, image_height as u32);
+    let (tx, rx) = channel();
 
-    for j in (0..(image_height)).rev() {
-        eprintln!("Scanlines remaining: {}", j);
-        pool.install(move || {
+    for j in 0..image_height {
+        let world_ref = world.clone();
+        let tx = tx.clone();
+        pool.execute(move || {
             let mut rng = thread_rng();
             for i in 0..image_width {
                 let mut pixel_color = Color::default();
@@ -161,11 +165,22 @@ fn main() {
 
                     let r = cam.get_ray(u, v);
 
-                    pixel_color = pixel_color + ray_color(r, &Arc::clone(&world), max_depth);
+                    pixel_color = pixel_color + ray_color(r, &world_ref, max_depth);
                 }
 
-                write_color(&mut std::io::stdout(), pixel_color, samples_per_pixel);
+                let rgb = format_pixel_color(pixel_color, samples_per_pixel);
+
+                tx.send((i, (image_height - j - 1).abs(), rgb))
+                    .expect("Could not send pixel data");
             }
-        })
+        });
     }
+
+    for _ in 0..(image_width as i32 * image_height) {
+        let (x, y, (r, g, b)) = rx.recv().unwrap();
+        let color = Rgb([r, g, b]);
+        img.put_pixel(x as u32, y as u32, color);
+    }
+
+    let _ = img.save("output.png").unwrap();
 }

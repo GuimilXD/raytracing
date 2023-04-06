@@ -1,5 +1,9 @@
-use std::{ops::{self, Neg}, cmp::min};
+use image::Pixel;
 use rand::prelude::*;
+use std::{
+    cmp::min,
+    ops::{self, Neg},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vec3 {
@@ -13,15 +17,17 @@ pub type Point3 = Vec3;
 
 impl Default for Vec3 {
     fn default() -> Self {
-        Self {x: 0.0, y: 0.0, z: 0.0}
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 }
 
 impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
-        Self {
-            x, y, z
-        }
+        Self { x, y, z }
     }
 
     pub fn random() -> Self {
@@ -31,7 +37,11 @@ impl Vec3 {
     pub fn random_range(min: f64, max: f64) -> Self {
         let mut rng = thread_rng();
 
-        Self::new(rng.gen_range(min..max), rng.gen_range(min..max), rng.gen_range(min..max))
+        Self::new(
+            rng.gen_range(min..max),
+            rng.gen_range(min..max),
+            rng.gen_range(min..max),
+        )
     }
 
     pub fn random_in_unit_sphere() -> Self {
@@ -46,7 +56,7 @@ impl Vec3 {
         }
     }
 
-    pub fn random_unit_vector() ->  Self {
+    pub fn random_unit_vector() -> Self {
         Self::random_in_unit_sphere().unit_vector()
     }
 
@@ -61,9 +71,7 @@ impl Vec3 {
     }
 
     pub fn length(self) -> f64 {
-        self
-            .length_squared()
-            .sqrt()
+        self.length_squared().sqrt()
     }
 
     pub fn length_squared(self) -> f64 {
@@ -78,7 +86,7 @@ impl Vec3 {
         Self {
             x: self.y * other.z - self.z * other.y,
             y: self.z * other.x - self.x * other.z,
-            z: self.x * other.y - self.y * other.x
+            z: self.x * other.y - self.y * other.x,
         }
     }
 
@@ -110,7 +118,9 @@ impl Vec3 {
         loop {
             let p = Vec3::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.0);
 
-            if p.length_squared() >= 1.0 { continue }
+            if p.length_squared() >= 1.0 {
+                continue;
+            }
 
             return p;
         }
@@ -119,18 +129,18 @@ impl Vec3 {
 
 impl ops::Neg for Vec3 {
     type Output = Vec3;
-    
+
     fn neg(self) -> Self::Output {
         Self {
             x: -self.x,
-            y: -self.y, 
-            z: -self.z
+            y: -self.y,
+            z: -self.z,
         }
     }
 }
 
 impl ops::Add for Vec3 {
-    type Output = Vec3; 
+    type Output = Vec3;
 
     fn add(self, rhs: Self) -> Self::Output {
         Self::Output {
@@ -142,7 +152,7 @@ impl ops::Add for Vec3 {
 }
 
 impl ops::Mul<f64> for Vec3 {
-    type Output = Vec3; 
+    type Output = Vec3;
 
     fn mul(self, scalar: f64) -> Self::Output {
         scalar * self
@@ -150,7 +160,7 @@ impl ops::Mul<f64> for Vec3 {
 }
 
 impl ops::Mul<Vec3> for f64 {
-    type Output = Vec3; 
+    type Output = Vec3;
 
     fn mul(self, v: Vec3) -> Self::Output {
         Self::Output {
@@ -162,7 +172,7 @@ impl ops::Mul<Vec3> for f64 {
 }
 
 impl ops::Mul for Vec3 {
-    type Output = Vec3; 
+    type Output = Vec3;
 
     fn mul(self, rhs: Self) -> Self::Output {
         Self::Output {
@@ -174,15 +184,15 @@ impl ops::Mul for Vec3 {
 }
 
 impl ops::Div<Vec3> for f64 {
-    type Output = Vec3; 
+    type Output = Vec3;
 
     fn div(self, v: Vec3) -> Self::Output {
-        (1.0/self) * v
+        (1.0 / self) * v
     }
 }
 
 impl ops::Div<f64> for Vec3 {
-    type Output = Vec3; 
+    type Output = Vec3;
 
     fn div(self, scalar: f64) -> Self::Output {
         self * (1.0 / scalar)
@@ -190,7 +200,7 @@ impl ops::Div<f64> for Vec3 {
 }
 
 impl ops::Sub for Vec3 {
-    type Output = Vec3; 
+    type Output = Vec3;
 
     fn sub(self, rhs: Self) -> Self::Output {
         self + (-rhs)
@@ -250,7 +260,6 @@ mod tests {
         assert_eq!(vec * scalar, scalar * vec);
     }
 
-
     #[test]
     fn vec3_div_scalar_ops() {
         let vec = Vec3::new(1.0, -3.0, 0.0);
@@ -262,7 +271,6 @@ mod tests {
         assert_eq!(vec.y, -1.5);
         assert_eq!(vec.z, 0.0);
     }
-
 
     #[test]
     fn vec3_dot_product() {
@@ -284,7 +292,9 @@ mod tests {
     fn vec3_unit_vector() {
         let vec = Vec3::new(1.0, 2.0, 3.0);
 
-        assert_eq!(vec.unit_vector(), Vec3::new(0.2672612419124244, 0.5345224838248488, 0.8017837257372732))
+        assert_eq!(
+            vec.unit_vector(),
+            Vec3::new(0.2672612419124244, 0.5345224838248488, 0.8017837257372732)
+        )
     }
 }
-
