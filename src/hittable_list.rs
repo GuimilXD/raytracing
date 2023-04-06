@@ -1,20 +1,21 @@
-use std::rc::Rc;
-use crate::hittable::{Hittable, HitRecord};
+use crate::hittable::{HitRecord, Hittable};
 use crate::ray::Ray;
+use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Default, Clone)]
 pub struct HittableList {
-    pub objects: Vec<Rc<dyn Hittable>>
+    pub objects: Vec<Arc<dyn Hittable + Send + Sync>>,
 }
 
 impl HittableList {
     pub fn new() -> Self {
         HittableList {
-            objects: Vec::new()
+            objects: Vec::new(),
         }
     }
 
-    pub fn add(&mut self, object: Rc<dyn Hittable>) {
+    pub fn add(&mut self, object: Arc<dyn Hittable + Send + Sync>) {
         self.objects.push(object);
     }
 
@@ -30,14 +31,13 @@ impl Hittable for HittableList {
         let mut closest_so_far = t_max;
 
         for object in &self.objects {
-           if object.hit(r, t_min, closest_so_far, &mut temp_rec) {
+            if object.hit(r, t_min, closest_so_far, &mut temp_rec) {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
 
                 *rec = temp_rec.clone();
-           }
+            }
         }
-
 
         hit_anything
     }
